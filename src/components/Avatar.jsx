@@ -4,12 +4,18 @@ Command: npx gltfjsx@6.5.2 public/models/670554bb28b74d971668da47.glb
 */
 
 import React, { useEffect, useRef } from 'react'
-import { useGraph } from '@react-three/fiber'
+import * as THREE from "three"
+import { useFrame, useGraph } from '@react-three/fiber'
 import { useAnimations, useFBX, useGLTF } from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
+import { useControls } from 'leva'
 
 export function Avatar(props) {
-
+    
+    const { headFollow, cursorFollow } = useControls({
+        headFollow: false,
+        cursorFollow: false
+    })
     const group = useRef();
     const { scene } = useGLTF('models/670554bb28b74d971668da47.glb')
     const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
@@ -23,6 +29,16 @@ export function Avatar(props) {
     useEffect(() => {
         actions["Typing"].reset().play();
     }, []);
+
+    useFrame((state) => {
+        if (headFollow) {
+            group.current.getObjectByName("Head").lookAt(state.camera.position);            
+        }
+        if (cursorFollow) {
+            const target = new THREE.Vector3(state.mouse.x, state.mouse.y, 1);
+            group.current.getObjectByName("Spine2").lookAt(target);
+        }
+    })
 
     return (
         <group {...props} ref={group} dispose={null}>
