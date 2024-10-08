@@ -11,24 +11,35 @@ import { SkeletonUtils } from 'three-stdlib'
 import { useControls } from 'leva'
 
 export function Avatar(props) {
+
+    const {animation} = props
     
-    const { headFollow, cursorFollow } = useControls({
+    const { headFollow, cursorFollow, wireframe } = useControls({
         headFollow: false,
-        cursorFollow: false
-    })
+        cursorFollow: false,
+        wireframe: false
+    });
     const group = useRef();
     const { scene } = useGLTF('models/670554bb28b74d971668da47.glb')
     const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
     const { nodes, materials } = useGraph(clone)
 
-    const { animations: typingAnimation } = useFBX("animations/Typing.fbx")
+    const { animations: typingAnimation } = useFBX("animations/Typing.fbx");
+    const { animations: standingAnimation } = useFBX("animations/Standing W_Briefcase Idle.fbx");
+    const { animations: fallingAnimation } = useFBX("animations/Falling To Landing.fbx");
+
     typingAnimation[0].name = "Typing";
-    const { actions } = useAnimations(typingAnimation, group)
+    standingAnimation[0].name = "Standing";
+    fallingAnimation[0].name = "Falling";
+    const { actions } = useAnimations([typingAnimation[0],standingAnimation[0],fallingAnimation[0],], group)
 
 
     useEffect(() => {
-        actions["Typing"].reset().play();
-    }, []);
+        actions[animation].reset().fadeIn(0.5).play();
+        return () => {
+            actions[animation].reset().fadeOut(0.5);
+        }
+    }, [animation]);
 
     useFrame((state) => {
         if (headFollow) {
@@ -39,6 +50,12 @@ export function Avatar(props) {
             group.current.getObjectByName("Spine2").lookAt(target);
         }
     })
+
+    useEffect(() => {
+        Object.values(materials).forEach((material) => {
+            material.wireframe = wireframe;
+        })
+    }, [wireframe])
 
     return (
         <group {...props} ref={group} dispose={null}>
